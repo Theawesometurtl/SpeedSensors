@@ -26,6 +26,7 @@ void static collectData(int: time, bool: direction) {
   times[carsPassed] = 1; //IDK how to access realtime, this might be a huge problem
   speeds[carsPassed] = speed;
 }
+
 bool static timerStarted(timer) {
   if (timer > slowestCar && timer < slowestCarWheel) {
     return true
@@ -66,22 +67,4 @@ void loop() {
 
   }
 
-
-
-
-
-
-  
-  if (pressure1 > minPressure) {//pressure check
-
-
-    //check to see if this is the second time the car activated the sensor
-    //the message won't trigger if a car stops on one side, or a certain amount of time passes between pressures
-    if (timer < slowestCar && timer > slowestCarWheel) {
-                                                        
-
-    }
-    timer = 0;//resetting the timer
-  }
-    
 }
