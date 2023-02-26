@@ -18,6 +18,33 @@ onto each arduino
 
 
 */
+#include   <Adafruit_BMP280.h>
+
+Adafruit_BMP280 bmp; // I2C Interface
+
+void setup()   {
+  Serial.begin(9600);
+  
+}
+
+void loop() {
+    Serial.print(F("Temperature   = "));
+    Serial.print(bmp.readTemperature());
+    Serial.println(" *C");
+
+     Serial.print(F("Pressure = "));
+    Serial.print(bmp.readPressure()/100);   //displaying the Pressure in hPa, you can change the unit
+    Serial.println("   hPa");
+
+    Serial.print(F("Approx altitude = "));
+    Serial.print(bmp.readAltitude(1019.66));   //The "1019.66" is the pressure(hPa) at sea level in day in your region
+    Serial.println("   m");                    //If you don't know it, modify it until you get your current   altitude
+
+    Serial.println();
+    delay(2000);
+}
+
+
 const int minPressure = 10;
 const int slowestCar = 10000;
 const int slowestCarWheel = 100;
@@ -42,26 +69,60 @@ void static collectData(int: time, bool: direction) {
 
 bool static timerStarted(timer) {
   if (timer > slowestCar && timer < slowestCarWheel) {
-    return true
+    return true;
   }
-  return false
+  return false;
+}
+
+//currently we don't have a way to trigger this, but this should send all the collected
+//data through the serial port, to be either read through the serial monitor, or 
+//made into a file using python.
+void sendToSerialPort() {
+  for (int i = 0; i < carsPassed - 1; i++) {
+    Serial.print(times[i]);
+    delay(100);
+    Serial.println(speeds[i]);
+    delay(100);
+
+
+  }
 }
 
 
 
 void setup() {
   Serial.begin(9600);
+
+  //everything else in setup is just to setup the pressure sensor
+  /* 
+  Serial.println(F("BMP280 test"));
+
+  if   (!bmp.begin()) {
+    Serial.println(F("Could not find a valid BMP280 sensor,   check wiring!"));
+    while (1);
+  }
+
+  // Default settings from datasheet.   //
+  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     // Operating Mode. 
+                   Adafruit_BMP280::SAMPLING_X2,     // Temp. oversampling 
+                   Adafruit_BMP280::SAMPLING_X16,    // Pressure oversampling 
+                   Adafruit_BMP280::FILTER_X16,      // Filtering. 
+                  Adafruit_BMP280::STANDBY_MS_500);   // Standby time. 
+  */
 }
 
 void loop() {
   pressure1 = analogRead(0);
   pressure2 = analogRead(1);
   
-  if (timer <= slowestCar) {//idk whether it's a good idea to let this num get bigger infinitely
-    timer1+=1;
-    timer2+=1;
+  if (timer1 <= slowestCar) {//idk whether it's a good idea to let this num get bigger infinitely
+    timer1++1;
+  }
+  if (timer2 <= slowestCar) {
+    timer2++;
   }
   
+
   if (pressure1 > minPressure) {
     //timer started function checks if the timer is in a certain range, meaning it would have been triggered already
     if (timerStarted(timer2)) {
