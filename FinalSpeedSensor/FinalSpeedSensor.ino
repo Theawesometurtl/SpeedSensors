@@ -11,10 +11,6 @@
 File myFile;
  
 
-  // open the file. note that only one file can be open at a time,
-  // so you have to close this one before opening another.
- 
-
 #define BMP280_ADDRESS 0x76
 Adafruit_BMP280 bmp; // I2C
 
@@ -26,7 +22,7 @@ char t[32];
 
 
 
-const int minPressure = 10;
+const double minPressure = 10;
 const int slowestCar = 10000;
 const int slowestCarWheel = 100;
 const int distance = 100;
@@ -36,8 +32,8 @@ int speeds[100];
 int carsPassed = 0;
 //we have two seperate timers so we can find the direction a car is going
 int timer = 0;
+int delayness = 10;
 double pressure;
-int speed;
 
 void collectData() {
   DateTime now = rtc.now();
@@ -49,7 +45,7 @@ void collectData() {
   // if the file opened okay, write to it:
   if (myFile) {
     Serial.print("Writing to test.txt...");
-    myFile.println("testing 1, 2, 3.");
+    myFile.println(t);
 	// close the file:
     myFile.close();
     Serial.println("done.");
@@ -62,10 +58,11 @@ void collectData() {
 }
 
 bool timerStarted(int timer) {
-  if (timer > slowestCar && timer < slowestCarWheel) {
+  if (timer < slowestCar && timer > slowestCarWheel) {
     return true;
   }
-  return false;
+  
+  return true;
 }
 
 
@@ -75,6 +72,7 @@ bool timerStarted(int timer) {
 void sendToSerialPort() {
   for (int i = 0; i < carsPassed - 1; i++) {
     Serial.print(times[i]);
+    Serial.println("works");
     delay(100);
 
 
@@ -130,7 +128,7 @@ while ( !Serial ) delay(100);   // wait for native usb
 
 void loop() {
   pressure = bmp.readPressure(); //this is in pa
-  Serial.println(pressure);
+  //Serial.println(pressure);
 
   if (timer <= slowestCar) {
     timer++;
@@ -148,6 +146,6 @@ void loop() {
 
 
   }
-  delay(1000);
+  delay(delayness);
 
 }
