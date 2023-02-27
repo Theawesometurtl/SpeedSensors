@@ -24,6 +24,7 @@ Adafruit_BMP280 bmp; // I2C Interface
 
 
 
+
 const int minPressure = 10;
 const int slowestCar = 10000;
 const int slowestCarWheel = 100;
@@ -91,7 +92,7 @@ void setup() {
 }
 
 void loop() {
-  pressure1 = bmp.readPressure()/100; //displaying the Pressure in hPa, you can change the unit
+  pressure1 = bmp.readPressure()/100; //this is in hpa
   pressure2 = analogRead(1);
   
   if (timer1 <= slowestCar) {//idk whether it's a good idea to let this num get bigger infinitely

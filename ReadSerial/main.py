@@ -19,10 +19,8 @@ for i in range(1000):
             string = str(line.decode("utf-8"))
 
         #every other line will be either the speed of the car, or the time of day
-        if (i % 2 == 0):
-            f.write("""speed: "%s" """ % string)
-        else:
-            f.write("""time: "%s" """ % string)
+
+        f.write("""time: "%s" """ % string)
 
         print(string)
  
