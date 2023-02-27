@@ -6,6 +6,15 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <Adafruit_BMP280.h>
+#include <SD.h>
+ 
+File myFile;
+ 
+
+  // open the file. note that only one file can be open at a time,
+  // so you have to close this one before opening another.
+ 
+
 #define BMP280_ADDRESS 0x76
 Adafruit_BMP280 bmp; // I2C
 
@@ -35,6 +44,20 @@ void collectData() {
   sprintf(t, "%02d:%02d:%02d %02d/%02d/%02d", now.hour(), now.minute(), now.second(), now.day(), now.month(), now.year());  
   
   times[carsPassed] = t; //IDK how to access realtime, this might be a huge problem
+   myFile = SD.open("test.txt", FILE_WRITE);
+ 
+  // if the file opened okay, write to it:
+  if (myFile) {
+    Serial.print("Writing to test.txt...");
+    myFile.println("testing 1, 2, 3.");
+	// close the file:
+    myFile.close();
+    Serial.println("done.");
+  } else {
+    // if the file didn't open, print an error:
+    Serial.println("error opening test.txt");
+  }
+
   carsPassed++;
 }
 
@@ -89,6 +112,20 @@ while ( !Serial ) delay(100);   // wait for native usb
                   Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
                   Adafruit_BMP280::FILTER_X16,      /* Filtering. */
                   Adafruit_BMP280::STANDBY_MS_500); 
+
+  Serial.print("Initializing SD card...");
+  // On the Ethernet Shield, CS is pin 4. It's set as an output by default.
+  // Note that even if it's not used as the CS pin, the hardware SS pin 
+  // (10 on most Arduino boards, 53 on the Mega) must be left as an output 
+  // or the SD library functions will not work. 
+   pinMode(10, OUTPUT);
+ 
+  if (!SD.begin(10)) {
+    Serial.println("initialization failed!");
+    return;
+  }
+  Serial.println("initialization done.");
+ 
 }
 
 void loop() {
