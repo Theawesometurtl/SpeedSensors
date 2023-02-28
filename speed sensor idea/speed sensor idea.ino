@@ -18,14 +18,23 @@ onto each arduino
 
 
 */
-#include   <Adafruit_BMP280.h>
+#include <RTClib.h>
+#include <Wire.h>
+#include <SPI.h>
+#include <Adafruit_BMP280.h>
+#include <SD.h>
+ 
+File myFile;
+ 
 
-Adafruit_BMP280 bmp; // I2C Interface
+#define BMP280_ADDRESS 0x76
+Adafruit_BMP280 bmp1;
+Adafruit_BMP280 bmp2; // I2C
 
+RTC_DS3231 rtc;
+char t[32];
 
-
-
-const int minPressure = 10;
+const double minPressure = 10;
 const int slowestCar = 10000;
 const int slowestCarWheel = 100;
 const int distance = 100;
@@ -36,18 +45,41 @@ int carsPassed = 0;
 //we have two seperate timers so we can find the direction a car is going
 int timer1 = 0;
 int timer2 = 0;
-int pressure;
-int speed;
 
-void static collectData(int: time, bool: direction) {
+int delayness = 10;
+double speed = 0;
+double pressure1;
+double pressure2;
+
+
+void collectData(int time, bool direction) {
+  DateTime now = rtc.now();
+  sprintf(t, "%02d:%02d:%02d %02d/%02d/%02d", now.hour(), now.minute(), now.second(), now.day(), now.month(), now.year());  
+  times[carsPassed] = t;
   speed = distance / time;
-  Serial.println(time + " " + speed);
-  times[carsPassed] = 1; //IDK how to access realtime, this might be a huge problem
   speeds[carsPassed] = speed;
-  carspassed++;
+
+  
+  myFile = SD.open("test.txt", FILE_WRITE);
+ 
+  // if the file opened okay, write to it:
+  if (myFile) {
+    Serial.print("Writing to test.txt...");
+    myFile.println(t);
+    myFile.println(speed);
+    myFile.println(direction);
+	// close the file:
+    myFile.close();
+    Serial.println("done.");
+  } else {
+    // if the file didn't open, print an error:
+    Serial.println("error opening test.txt");
+  }
+
+  carsPassed++;
 }
 
-bool static timerStarted(timer) {
+bool timerStarted(int timer) {
   if (timer > slowestCar && timer < slowestCarWheel) {
     return true;
   }
@@ -72,31 +104,78 @@ void sendToSerialPort() {
 
 void setup() {
   Serial.begin(9600);
+  delay(100);
+  Wire.begin();
+  rtc.begin();
+  rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
 
   //everything else in setup is just to setup the pressure sensor
-  /* 
-  Serial.println(F("BMP280 test"));
+  while ( !Serial ) delay(100);   // wait for native usb
+    Serial.println(F("BMP280 test"));
+    unsigned status1;
+    unsigned status2;
 
-  if   (!bmp.begin()) {
-    Serial.println(F("Could not find a valid BMP280 sensor,   check wiring!"));
-    while (1);
-  }
+    status1 = bmp1.begin(BMP280_ADDRESS);
+    status2 = bmp2.begin(BMP280_ADDRESS);
 
-  // Default settings from datasheet.   //
-  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     // Operating Mode. 
-                   Adafruit_BMP280::SAMPLING_X2,     // Temp. oversampling 
-                   Adafruit_BMP280::SAMPLING_X16,    // Pressure oversampling 
-                   Adafruit_BMP280::FILTER_X16,      // Filtering. 
-                  Adafruit_BMP280::STANDBY_MS_500);   // Standby time. 
-  */
+    if (!status1) {
+      Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
+                        "try a different address!"));
+      Serial.print("SensorID was: 0x"); Serial.println(bmp1.sensorID(),16);
+      Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
+      Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
+      Serial.print("        ID of 0x60 represents a BME 280.\n");
+      Serial.print("        ID of 0x61 represents a BME 680.\n");
+      while (1) delay(10);
+    }
+
+    /* Default settings from the datasheet. */
+    bmp1.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
+                    Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
+                    Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
+                    Adafruit_BMP280::FILTER_X16,      /* Filtering. */
+                    Adafruit_BMP280::STANDBY_MS_500); 
+
+    if (!status2) {
+      Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
+                        "try a different address!"));
+      Serial.print("SensorID was: 0x"); Serial.println(bmp2.sensorID(),16);
+      Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
+      Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
+      Serial.print("        ID of 0x60 represents a BME 280.\n");
+      Serial.print("        ID of 0x61 represents a BME 680.\n");
+      while (1) delay(10);
+    }
+
+    /* Default settings from the datasheet. */
+    bmp2.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
+                    Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
+                    Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
+                    Adafruit_BMP280::FILTER_X16,      /* Filtering. */
+                    Adafruit_BMP280::STANDBY_MS_500); 
+
+
+    Serial.print("Initializing SD card...");
+    // On the Ethernet Shield, CS is pin 4. It's set as an output by default.
+    // Note that even if it's not used as the CS pin, the hardware SS pin 
+    // (10 on most Arduino boards, 53 on the Mega) must be left as an output 
+    // or the SD library functions will not work. 
+    pinMode(10, OUTPUT);
+  
+    if (!SD.begin(10)) {
+      Serial.println("initialization failed!");
+      return;
+    }
+    Serial.println("initialization done.");
+  
 }
 
 void loop() {
-  pressure1 = bmp.readPressure()/100; //this is in hpa
-  pressure2 = analogRead(1);
+  pressure1 = bmp1.readPressure()/100; //this is in hpa
+  pressure2 = bmp2.readPressure()/100; //this is in hpa
   
   if (timer1 <= slowestCar) {//idk whether it's a good idea to let this num get bigger infinitely
-    timer1++1;
+    timer1++;
   }
   if (timer2 <= slowestCar) {
     timer2++;
