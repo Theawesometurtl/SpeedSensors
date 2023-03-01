@@ -27,7 +27,9 @@ onto each arduino
 File myFile;
  
 
-#define BMP280_ADDRESS 0x76
+#define BMP280_ADDRESS1 0x76
+#define BMP280_ADDRESS2 0x76
+
 Adafruit_BMP280 bmp1;
 Adafruit_BMP280 bmp2; // I2C
 
@@ -46,7 +48,7 @@ int carsPassed = 0;
 int timer1 = 0;
 int timer2 = 0;
 
-int delayness = 10;
+int delayness = 100;
 double speed = 0;
 double pressure1;
 double pressure2;
@@ -115,8 +117,8 @@ void setup() {
     unsigned status1;
     unsigned status2;
 
-    status1 = bmp1.begin(BMP280_ADDRESS);
-    status2 = bmp2.begin(BMP280_ADDRESS);
+    status1 = bmp1.begin(BMP280_ADDRESS1);
+    status2 = bmp2.begin(BMP280_ADDRESS2);
 
     if (!status1) {
       Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
@@ -173,6 +175,11 @@ void setup() {
 void loop() {
   pressure1 = bmp1.readPressure()/100; //this is in hpa
   pressure2 = bmp2.readPressure()/100; //this is in hpa
+
+  Serial.print("sensor1  ");
+  Serial.print(pressure1);
+  Serial.print("sensor 2  ");
+  Serial.println(pressure2);
   
   if (timer1 <= slowestCar) {//idk whether it's a good idea to let this num get bigger infinitely
     timer1++;
@@ -207,5 +214,6 @@ void loop() {
     }
 
   }
+  delay(delayness);
 
 }

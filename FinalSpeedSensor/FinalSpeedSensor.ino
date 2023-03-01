@@ -22,9 +22,8 @@ char t[32];
 
 
 
-const double minPressure = 10;
-const int slowestCar = 10000;
-const int slowestCarWheel = 100;
+const double minPressure = 100110;
+const int slowestCarWheel = 200;
 const int distance = 100;
 
 int times[100];
@@ -57,12 +56,13 @@ void collectData() {
   carsPassed++;
 }
 
-bool timerStarted(int timer) {
-  if (timer < slowestCar && timer > slowestCarWheel) {
+bool timerStarted(int t) {
+  if (t > slowestCarWheel) {
+    timer = 0;
     return true;
   }
   
-  return true;
+  return false;
 }
 
 
@@ -130,11 +130,12 @@ void loop() {
   pressure = bmp.readPressure(); //this is in pa
   //Serial.println(pressure);
 
-  if (timer <= slowestCar) {
+  if (timer <= 100000) {
     timer++;
   }
 
   if (pressure > minPressure) {
+    // Serial.println(pressure);
     if (timerStarted(timer)) {
       //timer started function checks if the timer is in a certain range, meaning it would have been triggered already
       collectData();//the bool is for the direction the car went in, I don't know a better way to specify direction
