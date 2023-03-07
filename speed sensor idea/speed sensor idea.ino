@@ -23,19 +23,17 @@ onto each arduino
 #include <SPI.h>
 #include <Adafruit_BMP280.h>
 #include <SD.h>
- 
+#define BMP280_ADDRESS 0x76
+
 File myFile;
- 
 
-#define BMP280_ADDRESS1 0x76
-#define BMP280_ADDRESS2 0x76
-
-Adafruit_BMP280 bmp1;
-Adafruit_BMP280 bmp2; // I2C
+Adafruit_BMP280 bmp;
 
 RTC_DS3231 rtc;
 char t[32];
 
+const int recieverPin = A0; //White wire
+const int broadcastPin = A1; //Olive wire
 const double minPressure = 10;
 const int slowestCar = 10000;
 const int slowestCarWheel = 100;
@@ -53,6 +51,16 @@ double speed = 0;
 double pressure1;
 double pressure2;
 
+void broadcast(int pin, double data) {
+  double dataQuartered = data / 4;
+  dataQuartered = round(dataQuartered);
+  analogWrite(pin, int(dataQuartered));
+}
+
+double recieve(int pin) {
+  int dataFourtered = analogRead(pin) * 4;
+  return double(dataFourtered);
+}
 
 void collectData(int time, bool direction) {
   DateTime now = rtc.now();
@@ -117,13 +125,12 @@ void setup() {
     unsigned status1;
     unsigned status2;
 
-    status1 = bmp1.begin(BMP280_ADDRESS1);
-    status2 = bmp2.begin(BMP280_ADDRESS2);
+    status = bmp.begin(BMP280_ADDRESS);
 
-    if (!status1) {
+    if (!status) {
       Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
                         "try a different address!"));
-      Serial.print("SensorID was: 0x"); Serial.println(bmp1.sensorID(),16);
+      Serial.print("SensorID was: 0x"); Serial.println(bmp.sensorID(),16);
       Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
       Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
       Serial.print("        ID of 0x60 represents a BME 280.\n");
@@ -132,30 +139,11 @@ void setup() {
     }
 
     /* Default settings from the datasheet. */
-    bmp1.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
+    bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
                     Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
                     Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
                     Adafruit_BMP280::FILTER_X16,      /* Filtering. */
                     Adafruit_BMP280::STANDBY_MS_500); 
-
-    if (!status2) {
-      Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
-                        "try a different address!"));
-      Serial.print("SensorID was: 0x"); Serial.println(bmp2.sensorID(),16);
-      Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
-      Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
-      Serial.print("        ID of 0x60 represents a BME 280.\n");
-      Serial.print("        ID of 0x61 represents a BME 680.\n");
-      while (1) delay(10);
-    }
-
-    /* Default settings from the datasheet. */
-    bmp2.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
-                    Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
-                    Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
-                    Adafruit_BMP280::FILTER_X16,      /* Filtering. */
-                    Adafruit_BMP280::STANDBY_MS_500); 
-
 
     Serial.print("Initializing SD card...");
     // On the Ethernet Shield, CS is pin 4. It's set as an output by default.
@@ -169,12 +157,18 @@ void setup() {
       return;
     }
     Serial.println("initialization done.");
-  
+
+  //for I2C connection with other arduino
+  Serial.begin(9600);
+  pinMode(recieverPin, INPUT); 
+  pinMode(broadcastPin, OUTPUT);
+  Serial.println("Board one active");
 }
 
 void loop() {
-  pressure1 = bmp1.readPressure()/100; //this is in hpa
-  pressure2 = bmp2.readPressure()/100; //this is in hpa
+  pressure1 = bmp.readPressure()/100; //this is in hpa
+  pressure2 = recieve(recieverPin); //this is in hpa
+  randomSeed(analogRead(5));
 
   Serial.print("sensor1  ");
   Serial.print(pressure1);
@@ -214,6 +208,7 @@ void loop() {
     }
 
   }
+
   delay(delayness);
 
 }
