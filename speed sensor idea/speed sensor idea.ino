@@ -39,7 +39,7 @@ const int slowestCar = 10000;
 const int slowestCarWheel = 100;
 const int distance = 100;
 
-int times[100];
+char *times[100];
 int speeds[100];
 int carsPassed = 0;
 //we have two seperate timers so we can find the direction a car is going
@@ -52,14 +52,12 @@ double pressure1;
 double pressure2;
 
 void broadcast(int pin, double data) {
-  double dataQuartered = data / 4;
-  dataQuartered = round(dataQuartered);
-  analogWrite(pin, int(dataQuartered));
+  analogWrite(pin, int(data));
 }
 
 double recieve(int pin) {
-  int dataFourtered = analogRead(pin) * 4;
-  return double(dataFourtered);
+  int data = analogRead(pin);
+  return double(data);
 }
 
 void collectData(int time, bool direction) {
@@ -77,7 +75,11 @@ void collectData(int time, bool direction) {
     Serial.print("Writing to test.txt...");
     myFile.println(t);
     myFile.println(speed);
-    myFile.println(direction);
+    if (direction) {
+    myFile.println(1);
+    } else {
+      myFile.println(0);
+    }
 	// close the file:
     myFile.close();
     Serial.println("done.");
@@ -122,8 +124,7 @@ void setup() {
   //everything else in setup is just to setup the pressure sensor
   while ( !Serial ) delay(100);   // wait for native usb
     Serial.println(F("BMP280 test"));
-    unsigned status1;
-    unsigned status2;
+    unsigned status;
 
     status = bmp.begin(BMP280_ADDRESS);
 
@@ -167,8 +168,9 @@ void setup() {
 
 void loop() {
   pressure1 = bmp.readPressure()/100; //this is in hpa
-  pressure2 = recieve(recieverPin); //this is in hpa
-  randomSeed(analogRead(5));
+  if (recieve(recieverPin) > 0) {
+    pressure2 = recieve(recieverPin); //this is in hpa
+  }
 
   Serial.print("sensor1  ");
   Serial.print(pressure1);
