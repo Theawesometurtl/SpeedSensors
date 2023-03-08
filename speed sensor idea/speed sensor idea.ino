@@ -24,6 +24,14 @@ onto each arduino
 #include <Adafruit_BMP280.h>
 #include <SD.h>
 #define BMP280_ADDRESS 0x76
+#include<SoftwareSerial.h>  // The library to create a secondary serial monitor on arduino uno.
+
+
+SoftwareSerial SUART(3, 4); // Sets the input and output ports to Digital Pins 3 and 4. They should be reversed with the pins on the speedometer. 
+char myData[10] = "";       // Creates a blank character array of size 10
+int i = 0;
+
+
 
 File myFile;
 
@@ -32,12 +40,11 @@ Adafruit_BMP280 bmp;
 RTC_DS3231 rtc;
 char t[32];
 
-const int recieverPin = A0; //White wire
-const int broadcastPin = A1; //Olive wire
 const double minPressure = 10;
 const int slowestCar = 10000;
 const int slowestCarWheel = 100;
 const int distance = 100;
+
 
 char *times[100];
 int speeds[100];
@@ -45,20 +52,14 @@ int carsPassed = 0;
 //we have two seperate timers so we can find the direction a car is going
 int timer1 = 0;
 int timer2 = 0;
+int z;
 
-int delayness = 100;
+int delayness = 0;
 double speed = 0;
 double pressure1;
 double pressure2;
 
-void broadcast(int pin, double data) {
-  analogWrite(pin, int(data));
-}
 
-double recieve(int pin) {
-  int data = analogRead(pin);
-  return double(data);
-}
 
 void collectData(int time, bool direction) {
   DateTime now = rtc.now();
@@ -159,18 +160,11 @@ void setup() {
     }
     Serial.println("initialization done.");
 
-  //for I2C connection with other arduino
-  Serial.begin(9600);
-  pinMode(recieverPin, INPUT); 
-  pinMode(broadcastPin, OUTPUT);
-  Serial.println("Board one active");
 }
 
 void loop() {
   pressure1 = bmp.readPressure()/100; //this is in hpa
-  if (recieve(recieverPin) > 0) {
-    pressure2 = recieve(recieverPin); //this is in hpa
-  }
+  pressure2 = z; //this is in hpa
 
   Serial.print("sensor1  ");
   Serial.print(pressure1);
@@ -209,6 +203,22 @@ void loop() {
       timer2 = 0;
     }
 
+  }
+  byte n = SUART.available();
+  if (n != 0)
+  {
+    char x = SUART.read(); 
+    if (x != 0x0A)  //end mark no found
+    {
+      myData[i] = x;  //save ASCII coded data in array
+      i++;
+    }
+    else
+    {
+      z = atoi(myData);  		 // getting the data in integer form
+      Serial.println(z);
+      i = 0;
+    }
   }
 
   delay(delayness);
