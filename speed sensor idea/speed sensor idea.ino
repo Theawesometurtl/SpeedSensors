@@ -27,20 +27,20 @@ onto each arduino
 #include<SoftwareSerial.h>  // The library to create a secondary serial monitor on arduino uno.
 
 
-SoftwareSerial SUART(3, 4); // Sets the input and output ports to Digital Pins 3 and 4. They should be reversed with the pins on the speedometer. 
+SoftwareSerial SUART(2, 3); // Sets the input and output ports to Digital Pins 3 and 4. They should be reversed with the pins on the speedometer. 
 char myData[10] = "";       // Creates a blank character array of size 10
 int i = 0;
 
 
 
 File myFile;
-
 Adafruit_BMP280 bmp;
 
 RTC_DS3231 rtc;
 char t[32];
 
-const double minPressure = 10;
+const double minPressure1 = 1013;
+const double minPressure2 = 1033;
 const int slowestCar = 10000;
 const int slowestCarWheel = 100;
 const int distance = 100;
@@ -54,8 +54,8 @@ int timer1 = 0;
 int timer2 = 0;
 int z;
 
-int delayness = 0;
-double speed = 0;
+int delayness = 1000;
+double carSpeed = 0;
 double pressure1;
 double pressure2;
 
@@ -65,8 +65,8 @@ void collectData(int time, bool direction) {
   DateTime now = rtc.now();
   sprintf(t, "%02d:%02d:%02d %02d/%02d/%02d", now.hour(), now.minute(), now.second(), now.day(), now.month(), now.year());  
   times[carsPassed] = t;
-  speed = distance / time;
-  speeds[carsPassed] = speed;
+  carSpeed = distance / time;
+  speeds[carsPassed] = carSpeed;
 
   
   myFile = SD.open("test.txt", FILE_WRITE);
@@ -75,7 +75,7 @@ void collectData(int time, bool direction) {
   if (myFile) {
     Serial.print("Writing to test.txt...");
     myFile.println(t);
-    myFile.println(speed);
+    myFile.println(carSpeed);
     if (direction) {
     myFile.println(1);
     } else {
@@ -93,7 +93,7 @@ void collectData(int time, bool direction) {
 }
 
 bool timerStarted(int timer) {
-  if (timer > slowestCar && timer < slowestCarWheel) {
+  if (timer < slowestCarWheel) {
     return true;
   }
   return false;
@@ -117,6 +117,7 @@ void sendToSerialPort() {
 
 void setup() {
   Serial.begin(9600);
+  SUART.begin(9600);
   delay(100);
   Wire.begin();
   rtc.begin();
@@ -164,13 +165,8 @@ void setup() {
 
 void loop() {
   pressure1 = bmp.readPressure()/100; //this is in hpa
-  pressure2 = z; //this is in hpa
+  collectData(100, true);
 
-  Serial.print("sensor1  ");
-  Serial.print(pressure1);
-  Serial.print("sensor 2  ");
-  Serial.println(pressure2);
-  
   if (timer1 <= slowestCar) {//idk whether it's a good idea to let this num get bigger infinitely
     timer1++;
   }
@@ -179,7 +175,8 @@ void loop() {
   }
   
 
-  if (pressure1 > minPressure) {
+  if (pressure1 > minPressure1) {
+    Serial.println("pressure1 exceeded");    
     //timer started function checks if the timer is in a certain range, meaning it would have been triggered already
     if (timerStarted(timer2)) {
       //store the data about the cars passed, direction, and speed
@@ -187,19 +184,22 @@ void loop() {
     } else {
       //if the timer hasn't been reset yet, it gets reset now
       timer1 = 0;
+      Serial.println("timer1 reset");
     }
     
 
 
   }
 
-  if (pressure2 > minPressure) {
+  if (pressure2 > minPressure2) {
+    Serial.println("pressure2 exceeded");
     //timer started function checks if the timer is in a certain range, meaning it would have been triggered already
     if (timerStarted(timer1)) {
       //store the data about the cars passed, direction, and speed
       collectData(timer2, false);//the bool is for the direction the car went in, I don't know a better way to specify direction
     } else {
       //if the timer hasn't been reset yet, it gets reset now
+      Serial.println("timer2 reset");
       timer2 = 0;
     }
 
@@ -215,9 +215,13 @@ void loop() {
     }
     else
     {
-      z = atoi(myData);  		 // getting the data in integer form
-      Serial.println(z);
+      pressure2 = atoi(myData);  		 // getting the data in integer form
       i = 0;
+      // Serial.print("sensor1  ");
+      // Serial.print(pressure1);
+      // Serial.print("sensor 2  ");
+      // Serial.println(pressure2);
+            
     }
   }
 

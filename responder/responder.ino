@@ -9,10 +9,10 @@ Adafruit_BMP085 bmp;
 // Ensure the sender and receiver have a shared ground connection! If the grounds aren’t connected then you won’t get any readings
 
 #include<SoftwareSerial.h>  // The library to create a secondary serial monitor on arduino uno.
-SoftwareSerial SUART(3, 4); // Sets the input and output ports to Digital Pins 3 and 4. They should be reversed with the pins on the speedometer. 
+SoftwareSerial SUART(2,3); // Sets the input and output ports to Digital Pins 3 and 4. They should be reversed with the pins on the speedometer. 
 char myData[10] = "";       // Creates a blank character array of size 10
 int i = 0;
-double data;
+int data;
 
 int counter = 0;
 
@@ -46,7 +46,6 @@ void loop() {
     counter = 0;
   }
   
-  Serial.println(counter);
-  delay(400);
+  delay(100);
     //Serial.println(recieve(recieverPin));
 }
