@@ -39,13 +39,13 @@ char t[32];
 const double minPressure1 = 1013;// these minPressure values need to be manually tweaked so the pressure sensor only reads values larger when a car runs over them
 const double minPressure2 = 1033;
 //a time won't be logged for a car if it took longer to pass than slowestCarPassTime, as the timers won't reset until after slowestCarPassTime has passed:
-const int slowestCarPassTime = 10000;
-const int distance = 100;
+const long slowestCarPassTime = 10000L;
+const double metersDistance = 1; 
 
 
 int carsPassed = 0;
 //we have two seperate timers so we can find the direction a car is going
-long timer1 = 0L;
+long timer1 = 0L; //these store the time in milliseconds it was when they started. In order to find how long it has been since then, simply subtract them from the millis() function
 long timer2 = 0L;
 int z;
 
@@ -59,10 +59,11 @@ double pressure2;
 void collectData(int time, bool direction) {
   //all the data here is sent to the other arduino via SUART because the RTC and SD librarys conflict, so this change would let this arduino handle the rtc and the other
   // arduino handle the SD card. We never actually connected the rtc
-  carSpeed = distance / time;
+  carSpeed = metersDistance / (time / 1000); // finding speed in m/s
+  carSpeed *= 3.6; //converting to km/h
 
   Serial.print("Writing to test.txt...");
-  SUART.print("Time the car took to pass: ")
+  SUART.print("Time the car took to pass: ");
   SUART.println(time);
   // SUART.println(carSpeed);
   if (direction) {
@@ -70,6 +71,8 @@ void collectData(int time, bool direction) {
   } else {                                      // and direction 2 is the opposite; the car passed over sensor 2 first, then sensor 1. The arduino this code runs on is sensor 1
     SUART.println("The car passed direction 2");// this arduino is also the arduino with a bmp280 sensor
   }
+  SUART.print("Number of cars passed: ");
+  SUART.println(carsPassed);
 // close the file:
   Serial.println("done.");
   carsPassed++;
@@ -130,7 +133,7 @@ void loop() {
       collectData(timer2, false);//the bool is for the direction the car went in, I don't know a better way to specify direction
     } else {
       //if the timer hasn't been reset yet, it gets reset now
-      if (timer < slowestCarPassTime) {
+      if (millis() - timer1 > slowestCarPassTime) {
       timer1 = millis();
       Serial.println("timer1 reset");
       }
@@ -148,7 +151,7 @@ void loop() {
       collectData(timer2, true);//the bool is for the direction the car went in, I don't know a better way to specify direction
     } else {
       //if the timer hasn't been reset yet, it gets reset now
-      if (timer < slowestCarPassTime) {
+      if (millis() - timer2 > slowestCarPassTime) { // condition checks if the timer has been reset within slowestCarPassTime
       Serial.println("timer2 reset");
       timer2 = millis();
       }
