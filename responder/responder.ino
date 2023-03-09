@@ -14,7 +14,7 @@ Adafruit_BMP085 bmp;
 
 #include<SoftwareSerial.h>  // The library to create a secondary serial monitor on arduino uno.
 SoftwareSerial SUART(2,3); // Sets the input and output ports to Digital Pins 3 and 4. They should be reversed with the pins on the speedometer. 
-char myData[10] = "";       // Creates a blank character array of size 10
+char myData[100] = "";       // Creates a blank character array of size 10
 int i = 0;
 int data;
 
@@ -70,7 +70,7 @@ void loop() {
       i = 0;
       myFile = SD.open("test.txt", FILE_WRITE);
       if (myFile) {
-        myFile.println(thing);
+        myFile.println(myData);
         myFile.close();
 
       } else {
@@ -87,6 +87,5 @@ void loop() {
     counter = 0;
   }
   
-  delay(100);
     //Serial.println(recieve(recieverPin));
 }

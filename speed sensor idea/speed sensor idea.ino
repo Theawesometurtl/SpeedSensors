@@ -43,16 +43,14 @@ const long slowestCarPassTime = 10000L;
 const double metersDistance = 1; 
 
 
-int carsPassed = 0;
 //we have two seperate timers so we can find the direction a car is going
-long timer1 = 0L; //these store the time in milliseconds it was when they started. In order to find how long it has been since then, simply subtract them from the millis() function
-long timer2 = 0L;
+long timer1 = -10000L; //these store the time in milliseconds it was when they started. In order to find how long it has been since then, simply subtract them from the millis() function
+long timer2 = -10000L;
 int z;
+double pressure1, pressure2, carSpeed;
 
+int carsPassed = 0;
 int delayness = 0; //this should only be more than 0 for managable testing
-double carSpeed = 0;
-double pressure1;
-double pressure2;
 
 
 
@@ -64,15 +62,35 @@ void collectData(int time, bool direction) {
 
   Serial.print("Writing to test.txt...");
   SUART.print("Time the car took to pass: ");
-  SUART.println(time);
+  delay(20);
+  SUART.println(String(time));
+  delay(20);
   // SUART.println(carSpeed);
   if (direction) {
     SUART.println("The car passed direction 1");//there isn't a good way to specify direction, but direction 1 means the car passed over sensor 1 first then sensor 2
   } else {                                      // and direction 2 is the opposite; the car passed over sensor 2 first, then sensor 1. The arduino this code runs on is sensor 1
     SUART.println("The car passed direction 2");// this arduino is also the arduino with a bmp280 sensor
   }
+  delay(20);
   SUART.print("Number of cars passed: ");
-  SUART.println(carsPassed);
+  delay(20);
+  SUART.println(String(carsPassed));
+  delay(20);
+  
+  delay(20);
+  Serial.println(String(time));
+  delay(20);
+  // SUART.println(carSpeed);
+  if (direction) {
+    Serial.println("The car passed direction 1");//there isn't a good way to specify direction, but direction 1 means the car passed over sensor 1 first then sensor 2
+  } else {                                      // and direction 2 is the opposite; the car passed over sensor 2 first, then sensor 1. The arduino this code runs on is sensor 1
+    Serial.println("The car passed direction 2");// this arduino is also the arduino with a bmp280 sensor
+  }
+  delay(20);
+  Serial.print("Number of cars passed: ");
+  delay(20);
+  Serial.println(String(carsPassed));
+  delay(20);
 // close the file:
   Serial.println("done.");
   carsPassed++;
@@ -81,7 +99,17 @@ void collectData(int time, bool direction) {
 bool timerStarted(int timer) {
   if (millis() - timer < slowestCarPassTime) {
     return true;
+    // Serial.print("TIMER IS STARTED");
   }
+  // Serial.print(millis() - timer);
+  // Serial.print("   ");
+  // Serial.print(millis());
+  // Serial.print("   ");
+  // Serial.print(timer);
+  // Serial.print("   ");
+  // Serial.print(slowestCarPassTime);  
+  // bool thing = millis() - timer < slowestCarPassTime;
+  // Serial.print(thing);  
   return false;
 }
 
@@ -131,16 +159,14 @@ void loop() {
     if (timerStarted(timer2)) {
       //store the data about the cars passed, direction, and speed
       collectData(timer2, false);//the bool is for the direction the car went in, I don't know a better way to specify direction
-    } else {
-      //if the timer hasn't been reset yet, it gets reset now
-      if (millis() - timer1 > slowestCarPassTime) {
+
+    }
+    //if the timer hasn't been reset yet, it gets reset now
+    if (!timerStarted(timer1)) {
       timer1 = millis();
       Serial.println("timer1 reset");
-      }
     }
     
-
-
   }
 
   if (pressure2 > minPressure2) {
@@ -149,15 +175,17 @@ void loop() {
     if (timerStarted(timer1)) {
       //store the data about the cars passed, direction, and speed
       collectData(timer2, true);//the bool is for the direction the car went in, I don't know a better way to specify direction
-    } else {
-      //if the timer hasn't been reset yet, it gets reset now
-      if (millis() - timer2 > slowestCarPassTime) { // condition checks if the timer has been reset within slowestCarPassTime
-      Serial.println("timer2 reset");
+    } 
+
+    //if the timer hasn't been reset yet, it gets reset now
+    if (!timerStarted(timer2)) {
       timer2 = millis();
-      }
+      Serial.println("timer2 reset");
     }
 
   }
+
+
   byte n = SUART.available();
   if (n != 0)
   {
@@ -172,7 +200,7 @@ void loop() {
       pressure2 = atoi(myData);  		 // getting the data in integer form
       i = 0;
       // Serial.print("sensor1  ");
-      // Serial.print(pressure1);
+      // Serial.println(pressure1);
       // Serial.print("sensor 2  ");
       // Serial.println(pressure2);
             
